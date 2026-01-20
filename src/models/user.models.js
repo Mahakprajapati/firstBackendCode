@@ -32,20 +32,21 @@ const userSchema = new Schema(
         ref: "Video",
       },
     ],
-    coverImage: {
-      typre: String,
-    },
+
     avatar: {
       type: String, //cloudinary url
       required: true,
     },
+    coverImage: {
+      type: String,
+    },
     password: {
       type: String, //cloudinary url
-      required: [true, "please enter passord"],
+      required: true,
     },
     refreshToken: {
       type: String,
-      required: true,
+      // required: true,
     },
   },
   { timestamps: true }
