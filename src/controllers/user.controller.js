@@ -4,6 +4,17 @@ import { ApiError } from "../utilities/ErrorHandler.js";
 import { uploadOnCloudinary } from "../utilities/cloudinary.js";
 import { ApiResponse } from "../utilities/ApiResponse.js";
 
+const ganerateAccessAndRefreshToken = async (userId) => {
+  const user = await User.findById(userId);
+  const accessToken = user.ganerateAccessToken();
+  const refreshToken = user.ganerateRefreshToken();
+
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  return { accessToken, refreshToken };
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   //get the user details from frontend
   //validation- Not Empty
@@ -17,6 +28,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //get the user details from frontend
   const { fullName, userName, email, password } = req.body;
+
+  console.log(fullName, userName, email, password);
 
   //validation- Not Empty
   if (fullName === "") {
@@ -46,6 +59,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   //check for coverImage, check avatar
+  // console.log(req.files?.avatar?.length);
   const avatarLocalPath = req.files?.avatar[0]?.path;
   // const coverImageLocalPath = req.files?.coverImage[0]?.path;
   // console.log("req.files :", req.files.avatar[0].fieldname);
@@ -97,4 +111,87 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "User Registered Successfully", createdUser));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  //get email and password from req.body
+  //validation - not empty
+  //check password and email is valid
+  //access and refresh atoken
+  //sent token in cookies
+
+  const { email, userName, password } = req.body;
+
+  if ([email, userName].some((field) => field?.trim() === "")) {
+    throw new ApiError(400, "all fields are required");
+  }
+  // if (!email && !userName) {
+  //   throw new ApiError(400, "all fields are required");
+  // }
+
+  const user = await User.findOne({
+    $or: [{ email }, { userName }],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "email and password are not exist.");
+  }
+  // console.log("Password :", password);
+
+  //Boolean answer
+  const hashedpassword = await user.isPasswordCorrect(password);
+
+  // console.log("hashedpassword", hashedpassword);
+
+  if (!hashedpassword) {
+    throw new ApiError(401, "Password is Incorrect.");
+  }
+
+  const { accessToken, refreshToken } = await ganerateAccessAndRefreshToken(
+    user._id
+  );
+
+  const ExistedUser = await User.findById(user._id).select(
+    "-refreshToken -password"
+  );
+
+  // console.log(
+  //   `AccessToken :${accessToken} , RefreshToken : ${refreshToken} and User : ${ExistedUser}`
+  // );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(200, "User loggedIn successfully", {
+        ExistedUser,
+        accessToken,
+        refreshToken,
+      })
+    );
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  const user = req.user;
+
+  await User.findByIdAndUpdate(user._id, {
+    $set: {
+      refreshToken: undefined,
+    },
+  });
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json(new ApiResponse(200, " User Logged Out", {}));
+});
+
+export { registerUser, loginUser, logoutUser };
