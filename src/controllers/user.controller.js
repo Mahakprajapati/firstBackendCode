@@ -3,6 +3,7 @@ import { asyncHandler } from "../utilities/asyncHandler.js";
 import { ApiError } from "../utilities/ErrorHandler.js";
 import { uploadOnCloudinary } from "../utilities/cloudinary.js";
 import { ApiResponse } from "../utilities/ApiResponse.js";
+import jwt from "jsonwebtoken";
 
 const ganerateAccessAndRefreshToken = async (userId) => {
   const user = await User.findById(userId);
@@ -194,4 +195,45 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, " User Logged Out", {}));
 });
 
-export { registerUser, loginUser, logoutUser };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incommingRefreshToken =
+    req.cookies?.refreshToken || req.body.refreshToken;
+
+  if (!incommingRefreshToken) {
+    throw new ApiError(401, "Unauthorized Request");
+  }
+
+  //Encoded Or Raw data and Decoded check on jwt.io by search
+  const decodedToken = jwt.verify(
+    incommingRefreshToken,
+    process.env.REFRESH_TOKEN_SECRET
+  );
+
+  const user = await User.findById(decodedToken._id);
+
+  if (incommingRefreshToken !== user?.refreshToken) {
+    throw new ApiError(401, "Refresh Token is expired or used");
+  }
+
+  const { accessToken, newRefreshToken } = ganerateAccessAndRefreshToken(
+    user._id
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", newRefreshToken, options)
+    .json(
+      new ApiResponse(200, "Access Token refreshed", {
+        accessToken,
+        refreshToken: newRefreshToken,
+      })
+    );
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken };
