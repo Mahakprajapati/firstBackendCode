@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { ApiError } from "../utilities/ErrorHandler.js";
 import { User } from "../models/user.models.js";
 
-const verifyJWT = async (req, res, next) => {
+const verifyJWT = async (req, _, next) => {
   try {
     // console.log("Token", req);
 
@@ -15,8 +15,10 @@ const verifyJWT = async (req, res, next) => {
     }
 
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    // console.log("decoded", decodedToken?._id);
 
-    const user = User.findById(decodedToken?._id);
+    const user = await User.findById(decodedToken?._id);
+
     if (!user) {
       throw new ApiError(401, "User is not existed");
     }

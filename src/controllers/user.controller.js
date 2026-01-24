@@ -239,14 +239,17 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
+  // console.log(`oldpassword : ${oldPassword} and newpassword : ${newPassword}`);
 
   if (!(oldPassword && newPassword)) {
     throw new ApiError(400, "all fields are required");
   }
 
-  const user = await User.findById(req.user._id);
+  // console.log(req.user.fullName);
+  const user = await User.findById(req.user?._id);
 
-  const isPasswordCorrect = user.isPasswordCorrect(oldPassword);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  // console.log("isPasswordCorrect", isPasswordCorrect);
 
   if (!isPasswordCorrect) {
     throw new ApiError(400, "Old password is Incorrect");
@@ -266,18 +269,17 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Current user fetched successfully", req.user));
 });
 
-const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { email, fullName } = req.body;
+const updateFullname = asyncHandler(async (req, res) => {
+  const { fullName } = req.body;
 
-  if (!(email && fullName)) {
-    throw new ApiError(400, "Email and password are required");
+  if (!fullName) {
+    throw new ApiError(400, "Fullname are required");
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
-        email,
         fullName,
       },
     },
@@ -286,7 +288,29 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "Email and fullName are successfully updated"));
+    .json(new ApiResponse(200, "FullName are successfully updated"));
+});
+
+const updateEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new ApiError(400, "Email are required");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        email,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Email are successfully updated"));
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
@@ -341,7 +365,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { userName } = req.params; //search on google req.param and req.body
-
+  // console.log("userName", userName);
   if (!userName.trim()) {
     throw new ApiError(400, "username is missing");
   }
@@ -381,7 +405,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
           $cond: {
             if: { $in: [req.user?._id, "$subscribers.subscriber"] },
             then: true,
-            else: fales,
+            else: false,
           },
         },
       },
@@ -403,7 +427,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   if (!channel?.length) {
     throw new ApiError(404, "Channel does not exists ");
   }
-  console.log("check what channel return :", channel);
+  // console.log("check what channel return :", channel);
 
   return res
     .status(200)
@@ -411,7 +435,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-  const user = User.aggregate([
+  console.log("req.user", req.user);
+  const user = await User.aggregate([
     {
       $match: {
         _id: new mongoose.Schema.Types.ObjectId(req.user?._id),
@@ -474,7 +499,8 @@ export {
   refreshAccessToken,
   changeCurrentPassword,
   getCurrentUser,
-  updateAccountDetails,
+  updateFullname,
+  updateEmail,
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
