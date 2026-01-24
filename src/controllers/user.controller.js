@@ -31,7 +31,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //get the user details from frontend
   const { fullName, userName, email, password } = req.body;
 
-  console.log(fullName, userName, email, password);
+  // console.log(fullName, userName, email, password);
 
   //validation- Not Empty
   if (fullName === "") {
@@ -111,6 +111,21 @@ const registerUser = asyncHandler(async (req, res) => {
   return res
     .status(201)
     .json(new ApiResponse(200, "User Registered Successfully", createdUser));
+});
+
+const deleteAcount = asyncHandler(async (req, res) => {
+  // console.log("user Befor Deletion",req.user)
+
+  const user = await User.deleteOne(req.user?._id);
+
+  if (!user) {
+    throw new ApiError(400, "User account is not deleted!");
+  }
+  // console.log("user After Deletion", user);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User account is deleted successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -493,6 +508,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
 export {
   registerUser,
+  deleteAcount,
   loginUser,
   logoutUser,
   refreshAccessToken,
