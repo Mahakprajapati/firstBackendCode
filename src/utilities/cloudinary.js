@@ -19,7 +19,7 @@ const uploadOnCloudinary = async function (localFilePath) {
       created_at: `${date.toLocaleTimeString}`,
     });
     //file has been uploaded successfully
-    // console.log("response :", response);
+    console.log("response :", response.url);
     // console.log("File is Uploaded on Cloudinary Successfully", response.url);
     fs.unlinkSync(localFilePath);
     return response;
