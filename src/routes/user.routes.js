@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   registerUser,
   deleteAcount,
+  deleteCoverImage,
   loginUser,
   logoutUser,
   refreshAccessToken,
@@ -32,6 +33,7 @@ router.route("/login").post(loginUser);
 //secure route
 router.route("/logout").get(verifyJWT, logoutUser);
 router.route("/delete-account").delete(verifyJWT, deleteAcount);
+router.route("/delete-coverImage").delete(verifyJWT, deleteCoverImage);
 router.route("/refresh-token").post(refreshAccessToken);
 //
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);

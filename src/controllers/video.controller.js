@@ -55,5 +55,9 @@ const uploadVideo = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, "Video is successfully uploaded", video));
 });
+//update thumbnail
+//update title
+//updat description
+//delete vedio
 
 export { uploadVideo };

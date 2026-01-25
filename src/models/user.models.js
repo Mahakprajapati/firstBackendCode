@@ -34,11 +34,17 @@ const userSchema = new Schema(
     ],
 
     avatar: {
-      type: String, //cloudinary url
-      required: true,
+      type: {
+        public_id: String,
+        url: String, //cloudinary url
+      },
     },
     coverImage: {
-      type: String,
+      type: {
+        public_id: String,
+        url: String, //cloudinary url
+      },
+      required: true,
     },
     password: {
       type: String, //cloudinary url
